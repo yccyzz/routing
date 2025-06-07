@@ -1,12 +1,8 @@
 #include "PathAllocator.hpp"
-
-// PathAllocator类的实现
-
 PathAllocator::PathAllocator(const std::vector<Die>& d, const std::vector<std::vector<int>>& cap)
     : dies(d), capacity(cap), total_dies(d.size()), total_pairs(0), successful_pairs(0) {
     usage.assign(total_dies, std::vector<int>(total_dies, 0));
 
-    // 构建快速查找集合
     for (int i = 0; i < total_dies; i++) {
         for (int s : dies[i].s_points) {
             dies[i].s_set.insert(s);
@@ -35,22 +31,18 @@ std::vector<std::vector<int>> PathAllocator::find_paths(int source_die, int targ
     std::queue<std::vector<int>> q;
     q.push({source_die});
 
-    while (!q.empty() && all_paths.size() < 1000) { // 限制路径数量防止爆炸
+    while (!q.empty() && all_paths.size() < 1000) { // 限制路径数量
         std::vector<int> current_path = q.front();
         q.pop();
 
         int current_die = current_path.back();
 
-        // 如果到达目标
-        if (current_die == target_die) {
+        // 如果到达目标或路径太长
+        if (current_die == target_die || current_path.size() >= max_hops) {
             all_paths.push_back(current_path);
             continue;
         }
 
-        // 如果路径太长，跳过
-        if (current_path.size() >= max_hops) continue;
-
-        // 探索邻居
         for (int next_die = 0; next_die < total_dies; next_die++) {
             if (next_die == current_die) continue;
             if (capacity[current_die][next_die] == 0) continue;
@@ -71,7 +63,6 @@ std::vector<std::vector<int>> PathAllocator::find_paths(int source_die, int targ
         }
     }
 
-    // 按路径长度排序，优先使用短路径
     std::sort(all_paths.begin(), all_paths.end(),
          [](const std::vector<int>& a, const std::vector<int>& b) {
              return a.size() < b.size();
@@ -114,28 +105,25 @@ bool PathAllocator::allocate_single_path(int s, int l, std::vector<Path>& paths)
     int l_die = find_die(l, false);
 
     if (s_die == -1 || l_die == -1) return false;
-    if (s_die == l_die) return true; // 同die，无需连接
+    if (s_die == l_die) return true;
 
     std::vector<std::vector<int>> possible_paths = find_paths(s_die, l_die);
 
     for (const auto& die_path : possible_paths) {
         if (is_path_available(die_path)) {
-            // 选择中转l点
-            std::vector<int> intermediate_l;
+            std::vector<int> m_l;
             for (int i = 1; i < die_path.size() - 1; i++) {
                 int intermediate_die = die_path[i];
-                int l_point = select_intermediate_l(intermediate_die, intermediate_l);
+                int l_point = select_intermediate_l(intermediate_die, m_l);
                 if (l_point == -1) {
-                    // 没有足够的中转l点，尝试下一条路径
                     break;
                 }
-                intermediate_l.push_back(l_point);
+                m_l.push_back(l_point);
             }
 
-            // 如果中转点数量正确，使用这条路径
-            if (intermediate_l.size() == die_path.size() - 2) {
+            if (m_l.size() == die_path.size() - 2) {
                 use_path(die_path);
-                paths.push_back({s, l, die_path, intermediate_l});
+                paths.push_back({s, l, die_path, m_l});
                 return true;
             }
         }
@@ -161,7 +149,6 @@ std::vector<Path> PathAllocator::allocate_all_paths() {
 
     long long processed = 0;
 
-    // 按die对进行处理，提高局部性
     for (int s_die = 0; s_die < total_dies; s_die++) {
         for (int l_die = 0; l_die < total_dies; l_die++) {
             if (s_die == l_die) continue;
@@ -176,15 +163,13 @@ std::vector<Path> PathAllocator::allocate_all_paths() {
                         successful_pairs++;
                     }
                     processed++;
-
-                    // 定期输出进度
-                    if (processed % 100000 == 0) {
-                        auto current_time = std::chrono::high_resolution_clock::now();
-                        auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(current_time - start_time).count();
-                        double progress = (double)processed / total_pairs * 100;
-                        std::cout << "process: " << progress << "% (" << processed << "/" << total_pairs
-                             << "), cost time: " << elapsed << "s: " << successful_pairs << std::endl;
-                    }
+                    // if (processed % 100000 == 0) {
+                    //     auto current_time = std::chrono::high_resolution_clock::now();
+                    //     auto elapsed = std::chrono::duration_cast<std::chrono::seconds>(current_time - start_time).count();
+                    //     double progress = (double)processed / total_pairs * 100;
+                    //     std::cout << "process: " << progress << "% (" << processed << "/" << total_pairs
+                    //          << "), cost time: " << elapsed << "s: " << successful_pairs << std::endl;
+                    // }
                 }
             }
         }
@@ -207,13 +192,11 @@ std::vector<std::vector<int>> PathAllocator::get_usage() const {
 void PathAllocator::print_statistics() const {
     std::cout << "\n=== total info ===" << std::endl;
 
-    // Die信息
     for (int i = 0; i < total_dies; i++) {
         std::cout << "Die" << i << ": " << dies[i].s_points.size()
              << " s , " << dies[i].l_points.size() << " l " << std::endl;
     }
 
-    // 容量vs使用情况
     std::cout << "\n=== usage situation ===" << std::endl;
     int total_capacity = 0, total_used = 0;
     for (int i = 0; i < total_dies; i++) {
@@ -232,8 +215,6 @@ void PathAllocator::print_statistics() const {
     std::cout << "总体利用率: " << total_used << "/" << total_capacity
          << " (" << (double)total_used/total_capacity*100 << "%)" << std::endl;
 }
-
-// 文件读取和处理函数的实现
 
 std::vector<std::vector<std::string>> read_position_file(const std::string& filename) {
     std::vector<std::vector<std::string>> die_nodes;
@@ -338,7 +319,6 @@ std::map<std::string, std::pair<char, int>> read_sl_file(const std::string& file
             }
             continue;
         }
-
         node_types[node] = std::make_pair(type[0], weight);
     }
 
@@ -358,7 +338,6 @@ int parse_node_id(const std::string& node) {
         }
 
         std::string id_str = node.substr(1);
-
         if (id_str[0] == 'p') {
             return 10000 + std::stoi(id_str.substr(1));
         }
@@ -391,7 +370,6 @@ std::vector<Die> build_dies(const std::vector<std::vector<std::string>>& die_nod
                     invalid_nodes++;
                     continue;
                 }
-
                 if (it->second.first == 's') {
                     dies[die_id].s_points.push_back(node_id);
                 } else if (it->second.first == 'l') {
@@ -419,7 +397,7 @@ void save_results(const std::vector<Path>& paths, const std::vector<std::vector<
     file << "=== 路径分配结果 ===" << std::endl;
     file << "总路径数: " << paths.size() << std::endl << std::endl;
 
-    // 写入路径信息（只写入前1000条，避免文件过大）
+    // TODO:写入前1000条路径信息
     file << "=== 路径详情 (前1000条) ===" << std::endl;
     for (int i = 0; i < std::min(1000, (int)paths.size()); i++) {
         const auto& path = paths[i];
@@ -428,18 +406,17 @@ void save_results(const std::vector<Path>& paths, const std::vector<std::vector<
         for (int j = 0; j < path.die_seq.size(); j++) {
             if (j > 0) file << " -> ";
             file << "D" << path.die_seq[j];
-            if (j > 0 && j < path.die_seq.size() - 1 && j-1 < path.intermediate_l.size()) {
-                file << "(l" << path.intermediate_l[j-1] << ")";
+            if (j > 0 && j < path.die_seq.size() - 1 && j-1 < path.m_l.size()) {
+                file << "(l" << path.m_l[j-1] << ")";
             }
         }
         file << std::endl;
     }
 
     if (paths.size() > 1000) {
-        file << "... 还有 " << (paths.size() - 1000) << " 条路径" << std::endl;
+        file << "还有 " << (paths.size() - 1000) << " 条路径" << std::endl;
     }
 
-    // 写入使用统计
     file << std::endl << "=== Die间链路使用统计 ===" << std::endl;
     for (int i = 0; i < usage.size(); i++) {
         for (int j = 0; j < usage[i].size(); j++) {
