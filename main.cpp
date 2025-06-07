@@ -1,6 +1,7 @@
 #include "PathAllocator.hpp"
 
 int main() {
+    auto time_begin = std::chrono::high_resolution_clock::now();
     std::string position_file = "C:/Users/dell/Downloads/design.die.position";
     std::string network_file = "C:/Users/dell/Downloads/design.die.network";
     std::string sl_file = "C:/Users/dell/Downloads/design.net";
@@ -37,6 +38,7 @@ int main() {
 
     allocator.print_statistics();
     save_results(paths, allocator.get_usage(), output_file);
-
+    auto time_end = std::chrono::high_resolution_clock::now();
+    std::cout << (time_end - time_begin)/10e9 << std::endl;
     return 0;
 }
