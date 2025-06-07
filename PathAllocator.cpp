@@ -212,7 +212,7 @@ void PathAllocator::print_statistics() const {
         }
     }
 
-    std::cout << "总体利用率: " << total_used << "/" << total_capacity
+    std::cout << "usage present: " << total_used << "/" << total_capacity
          << " (" << (double)total_used/total_capacity*100 << "%)" << std::endl;
 }
 
