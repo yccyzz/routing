@@ -196,7 +196,6 @@ public:
         vector<Path> paths;
         auto start_time = high_resolution_clock::now();
 
-        cout << "开始路径分配..." << endl;
 
         // 预计算总的s-l对数量
         for (int s_die = 0; s_die < total_dies; s_die++) {
@@ -207,7 +206,7 @@ public:
             }
         }
 
-        cout << "总共需要分配 " << total_pairs << " 条路径" << endl;
+        cout <<  total_pairs << " paths need alloting" << endl;
 
         long long processed = 0;
 
@@ -216,9 +215,9 @@ public:
             for (int l_die = 0; l_die < total_dies; l_die++) {
                 if (s_die == l_die) continue;
 
-                cout << "处理 Die" << s_die << " -> Die" << l_die
-                     << " (" << dies[s_die].s_points.size() << " s点, "
-                     << dies[l_die].l_points.size() << " l点)" << endl;
+                cout << " Die" << s_die << " -> Die" << l_die
+                     << " (" << dies[s_die].s_points.size() << " s , "
+                     << dies[l_die].l_points.size() << " l )" << endl;
 
                 for (int s : dies[s_die].s_points) {
                     for (int l : dies[l_die].l_points) {
@@ -232,8 +231,8 @@ public:
                             auto current_time = high_resolution_clock::now();
                             auto elapsed = duration_cast<seconds>(current_time - start_time).count();
                             double progress = (double)processed / total_pairs * 100;
-                            cout << "进度: " << progress << "% (" << processed << "/" << total_pairs
-                                 << "), 耗时: " << elapsed << "s, 成功: " << successful_pairs << endl;
+                            cout << "process: " << progress << "% (" << processed << "/" << total_pairs
+                                 << "), cost time: " << elapsed << "s: " << successful_pairs << endl;
                         }
                     }
                 }
@@ -243,9 +242,8 @@ public:
         auto end_time = high_resolution_clock::now();
         auto total_time = duration_cast<seconds>(end_time - start_time).count();
 
-        cout << "路径分配完成!" << endl;
-        cout << "总耗时: " << total_time << " 秒" << endl;
-        cout << "成功分配: " << successful_pairs << "/" << total_pairs
+        cout << "time cost: " << total_time  << endl;
+        cout << "successful allocation: " << successful_pairs << "/" << total_pairs
              << " (" << (double)successful_pairs/total_pairs*100 << "%)" << endl;
 
         return paths;
@@ -258,16 +256,16 @@ public:
 
     // 打印详细统计
     void print_statistics() const {
-        cout << "\n=== 统计信息 ===" << endl;
+        cout << "\n=== total info ===" << endl;
 
         // Die信息
         for (int i = 0; i < total_dies; i++) {
             cout << "Die" << i << ": " << dies[i].s_points.size()
-                 << " s点, " << dies[i].l_points.size() << " l点" << endl;
+                 << " s , " << dies[i].l_points.size() << " l " << endl;
         }
 
         // 容量vs使用情况
-        cout << "\n=== 链路使用情况 ===" << endl;
+        cout << "\n=== usage situation ===" << endl;
         int total_capacity = 0, total_used = 0;
         for (int i = 0; i < total_dies; i++) {
             for (int j = 0; j < total_dies; j++) {
@@ -503,7 +501,7 @@ void save_results(const vector<Path>& paths, const vector<vector<int>>& usage,
     }
 
     file.close();
-    cout << "结果已保存到: " << output_file << endl;
+    cout << "data save to: " << output_file << endl;
 }
 
 int main() {
@@ -512,37 +510,35 @@ int main() {
     string sl_file = "C:/Users/dell/Downloads/design.net";
     string output_file = "path_allocation_results.txt";
 
-    cout << "=== 大规模路径分配程序 ===" << endl;
-    cout << "加载数据文件..." << endl;
+    cout << "======" << endl;
 
-    // 读取数据
     vector<vector<string>> die_nodes = read_position_file(position_file);
     if (die_nodes.empty()) {
-        cerr << "无法读取position文件" << endl;
+        cerr << "fail to catch ./position" << endl;
         return 1;
     }
-    cout << "找到 " << die_nodes.size() << " 个die" << endl;
+    cout << "node num: " << die_nodes.size()  << endl;
 
     vector<vector<int>> capacity = read_network_file(network_file);
     if (capacity.empty()) {
-        cerr << "无法读取network文件" << endl;
+        cerr << "fail to catch ./network" << endl;
         return 1;
     }
-    cout << "网络矩阵大小: " << capacity.size() << "x" << capacity[0].size() << endl;
+    cout << "capacity.size: " << capacity.size() << "x" << capacity[0].size() << endl;
 
     map<string, pair<char, int>> node_types = read_sl_file(sl_file);
     if (node_types.empty()) {
-        cerr << "无法读取s/l定义文件" << endl;
+        cerr << "fail to catch ./net" << endl;
         return 1;
     }
-    cout << "找到 " << node_types.size() << " 个节点定义" << endl;
+    cout << "node_types num : " << node_types.size() << endl;
 
     // 构建数据结构
     vector<Die> dies = build_dies(die_nodes, node_types);
 
     // 验证数据
     if (dies.size() != capacity.size()) {
-        cerr << "Die数量与网络矩阵大小不匹配" << endl;
+        cerr << "fail to match dies_num to capacity_num" << endl;
         return 1;
     }
 

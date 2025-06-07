@@ -1,19 +1,29 @@
-# CLion
+# CLion IDE
 .idea/
-cmake-build-*/
 *.iml
 
-# Build artifacts
+# CMake build directories
+cmake-build-*/
 build/
 out/
+
+# Compiled Object files
 *.o
 *.obj
+
+# Executables
 *.exe
-*.dll
+*.out
+*.app
+
+# Libraries
+*.lib
+*.a
 *.so
 *.dylib
+*.dll
 
-# CMake
+# CMake generated files
 CMakeCache.txt
 CMakeFiles/
 CMakeScripts/
@@ -23,6 +33,7 @@ cmake_install.cmake
 install_manifest.txt
 compile_commands.json
 CTestTestfile.cmake
+_deps
 
 # Visual Studio
 .vs/
@@ -46,3 +57,9 @@ CTestTestfile.cmake
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+# Debug and Release folders
+Debug/
+Release/
+x64/
+x86/
